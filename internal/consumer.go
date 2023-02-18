@@ -7,14 +7,6 @@ import (
 	v2 "github.com/cloudevents/sdk-go/v2"
 )
 
-// TODO: move into Kafka transport
-// const (
-// 	kibibyte         = 1024
-// 	mebibyte         = 1024 * kibibyte
-// 	readMinBatchSize = 10 * kibibyte
-// 	readMaxBatchSize = 10 * mebibyte
-// )
-
 // Can't type more specifically as the CloudEvents
 // SDK explicitly types these func params as interface{}
 type receiverFunc any
