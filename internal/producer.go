@@ -13,16 +13,16 @@ import (
 
 const interval = 1 * time.Second
 
-type KafkaConn interface {
+type kafkaWriter interface {
 	WriteMessages(...kafka.Message) (int, error)
 }
 
 type Producer struct {
-	conn KafkaConn
+	writer kafkaWriter
 }
 
-func NewProducer(conn KafkaConn) Producer {
-	return Producer{conn}
+func NewProducer(writer kafkaWriter) Producer {
+	return Producer{writer}
 }
 
 func (p Producer) Run(ctx context.Context) error {
@@ -63,7 +63,7 @@ func (p Producer) writeMessage() error {
 		return fmt.Errorf("cloudevent set data: %w", err)
 	}
 
-	n, err := p.conn.WriteMessages(kafka.Message{
+	n, err := p.writer.WriteMessages(kafka.Message{
 		Value: event.Data(),
 	})
 
