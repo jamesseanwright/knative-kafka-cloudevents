@@ -24,7 +24,7 @@ type cloudEventReceiver interface {
 }
 
 type logger interface {
-	Println(...any)
+	Info(args ...any)
 }
 
 type Consumer struct {
@@ -40,7 +40,7 @@ func (p Consumer) Run(ctx context.Context) error {
 	// We're scaling consumers with Knative,
 	// so it's perfectly fine to block here
 	if err := p.receiver.StartReceiver(ctx, func(event v2.Event) {
-		p.logger.Println(event)
+		p.logger.Info(event)
 	}); err != nil {
 		return fmt.Errorf("cloudevents receiver: %w", err)
 	}
