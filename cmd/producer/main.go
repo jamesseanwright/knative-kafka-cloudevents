@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	v2 "github.com/cloudevents/sdk-go/v2"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/jamesseanwright/knative-kafka-cloudevents/internal"
 	"github.com/segmentio/kafka-go"
 )
@@ -18,7 +18,7 @@ func main() {
 	}
 
 	protocol := internal.NewKafkaCloudEventsProtocol(conn)
-	client, err := v2.NewClient(protocol)
+	client, err := cloudevents.NewClient(protocol)
 
 	if err != nil {
 		logger.Fatal(client)
