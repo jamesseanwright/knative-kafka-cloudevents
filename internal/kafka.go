@@ -167,5 +167,7 @@ func (p KafkaCloudEventsProtocol) Receive(context.Context) (binding.Message, err
 }
 
 func (p KafkaCloudEventsProtocol) Send(_ context.Context, message binding.Message, transformers ...binding.Transformer) error {
+	// TODO: WriteProducerMessage here (https://github.com/cloudevents/sdk-go/blob/82f2b61ecde41fd0577969cc58a7c2a18eeda250/protocol/kafka_sarama/v2/sender.go#L70)
+	// TODO: general attribution
 	return nil
 }
