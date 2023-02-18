@@ -6,29 +6,30 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"golang.org/x/sync/errgroup"
 )
 
-const interval = 1 * time.Second
+const writeInterval = 1 * time.Second
 
-type kafkaWriter interface {
-	WriteMessages(...kafka.Message) (int, error)
+type cloudEventSender interface {
+	Send(context.Context, event.Event) protocol.Result
 }
 
 type Producer struct {
-	writer kafkaWriter
+	sender cloudEventSender
 }
 
-func NewProducer(writer kafkaWriter) Producer {
-	return Producer{writer}
+func NewProducer(sender cloudEventSender) Producer {
+	return Producer{sender}
 }
 
 func (p Producer) Run(ctx context.Context) error {
-	ticker := time.NewTicker(interval)
+	ticker := time.NewTicker(writeInterval)
 	done := ctx.Done()
-	g, _ := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
 		for {
@@ -37,7 +38,7 @@ func (p Producer) Run(ctx context.Context) error {
 				return nil
 
 			case <-ticker.C:
-				if err := p.writeMessage(); err != nil {
+				if err := p.sendMessage(ctx); err != nil {
 					return err
 				}
 			}
@@ -47,7 +48,7 @@ func (p Producer) Run(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (p Producer) writeMessage() error {
+func (p Producer) sendMessage(ctx context.Context) error {
 	id, err := uuid.NewRandom()
 
 	if err != nil {
@@ -63,16 +64,8 @@ func (p Producer) writeMessage() error {
 		return fmt.Errorf("cloudevent set data: %w", err)
 	}
 
-	n, err := p.writer.WriteMessages(kafka.Message{
-		Value: event.Data(),
-	})
-
-	if err != nil {
-		return fmt.Errorf("kafka write: %w", err)
-	}
-
-	if n != 1 {
-		return fmt.Errorf("kafka write: incorrect number of messages published (want: 1, got: %d)", n)
+	if err := p.sender.Send(ctx, event); err != nil {
+		return fmt.Errorf("cloudevent send: %w", err)
 	}
 
 	return nil
