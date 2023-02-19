@@ -20,10 +20,11 @@ type cloudEventSender interface {
 
 type Producer struct {
 	sender cloudEventSender
+	logger stdLogger
 }
 
-func NewProducer(sender cloudEventSender) Producer {
-	return Producer{sender}
+func NewProducer(sender cloudEventSender, logger stdLogger) Producer {
+	return Producer{sender, logger}
 }
 
 func (p Producer) Run(ctx context.Context) error {
@@ -54,6 +55,8 @@ func (p Producer) sendMessage(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("cloudevent id generation: %w", err)
 	}
+
+	p.logger.Info("creating new event with ID", id)
 
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetID(id.String())

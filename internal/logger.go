@@ -5,6 +5,10 @@ import (
 	"os"
 )
 
+type stdLogger interface {
+	Info(args ...any)
+}
+
 type Logger struct {
 	stdLogger *log.Logger
 	errLogger *log.Logger

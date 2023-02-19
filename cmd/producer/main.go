@@ -24,7 +24,7 @@ func main() {
 		logger.Fatal(client)
 	}
 
-	producer := internal.NewProducer(client)
+	producer := internal.NewProducer(client, logger)
 
 	if err := producer.Run(ctx); err != nil {
 		logger.Fatal(err)

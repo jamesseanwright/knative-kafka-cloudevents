@@ -11,16 +11,12 @@ type cloudEventReceiver interface {
 	StartReceiver(ctx context.Context, receiverFunc any) error
 }
 
-type logger interface {
-	Info(args ...any)
-}
-
 type Consumer struct {
 	receiver cloudEventReceiver
-	logger   logger
+	logger   stdLogger
 }
 
-func NewConsumer(receiver cloudEventReceiver, logger logger) Consumer {
+func NewConsumer(receiver cloudEventReceiver, logger stdLogger) Consumer {
 	return Consumer{receiver, logger}
 }
 
