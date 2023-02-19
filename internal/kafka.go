@@ -14,6 +14,8 @@ import (
 	"github.com/segmentio/kafka-go/protocol"
 )
 
+// TODO: general attribution
+
 const (
 	cloudEventPrefix = "ce_"
 	kibibyte         = 1024
@@ -166,8 +168,15 @@ func (p KafkaCloudEventsProtocol) Receive(context.Context) (binding.Message, err
 	return newMessage(msg), nil
 }
 
-func (p KafkaCloudEventsProtocol) Send(_ context.Context, message binding.Message, transformers ...binding.Transformer) error {
-	// TODO: WriteProducerMessage here (https://github.com/cloudevents/sdk-go/blob/82f2b61ecde41fd0577969cc58a7c2a18eeda250/protocol/kafka_sarama/v2/sender.go#L70)
-	// TODO: general attribution
+func (p KafkaCloudEventsProtocol) Send(ctx context.Context, message binding.Message, transformers ...binding.Transformer) error {
+	writer := &kafkaMessageWriter{}
+
+	if _, err := binding.Write(ctx, message, nil, writer); err != nil {
+		return fmt.Errorf("send kafka cloudevent: %w", err)
+	}
+
 	return nil
 }
+
+// verifying interface conformity
+var _ binding.BinaryWriter = (*kafkaMessageWriter)(nil)
