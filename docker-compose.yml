@@ -5,7 +5,8 @@ services:
       args:
         - entrypoint=producer
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 
   consumer:
     build:
@@ -13,7 +14,8 @@ services:
       args:
         - entrypoint=consumer
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 
   zookeeper:
     image: bitnami/zookeeper:3.8.1
@@ -32,3 +34,9 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 8s

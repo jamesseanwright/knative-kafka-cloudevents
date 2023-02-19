@@ -7,6 +7,6 @@ COPY . .
 ENV CGO_ENABLED=0
 RUN go build -o bin/main ./cmd/${entrypoint}
 
-FROM gcr.io/distroless/static-debian11
+FROM alpine:3.17.2
 COPY --from=build /app/bin/main .
 ENTRYPOINT ["./main"]
