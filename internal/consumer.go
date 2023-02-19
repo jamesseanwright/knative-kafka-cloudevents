@@ -7,12 +7,8 @@ import (
 	v2 "github.com/cloudevents/sdk-go/v2"
 )
 
-// Can't type more specifically as the CloudEvents
-// SDK explicitly types these func params as interface{}
-type receiverFunc any
-
 type cloudEventReceiver interface {
-	StartReceiver(context.Context, receiverFunc) error
+	StartReceiver(ctx context.Context, receiverFunc any) error
 }
 
 type logger interface {
