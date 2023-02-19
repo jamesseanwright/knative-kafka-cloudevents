@@ -9,4 +9,4 @@ RUN go build -o bin/main ./cmd/${entrypoint}
 
 FROM gcr.io/distroless/static-debian11
 COPY --from=build /app/bin/main .
-CMD ["./main"]
+ENTRYPOINT ["./main"]
