@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const writeInterval = 1 * time.Second
+const writeInterval = 100 * time.Millisecond
 
 type Producer struct {
 	eventSender CloudEventsSender

@@ -19,7 +19,7 @@ func (p Consumer) Run(ctx context.Context) {
 	events := make(chan cloudevents.Event)
 	errs := make(chan error)
 
-	p.eventReader.ReadBatch(events, errs)
+	go p.eventReader.ReadBatch(events, errs)
 
 	// We're scaling consumers with Knative,
 	// so it's perfectly fine to block here
@@ -28,6 +28,7 @@ func (p Consumer) Run(ctx context.Context) {
 		case evt := <-events:
 			p.logger.Info(evt)
 		case err := <-errs:
+			// TODO: report io.EOF count and use to adjust batch size
 			p.logger.Error(err)
 		}
 	}

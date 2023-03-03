@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	minMessageSizeBytes   = 250
-	maxReadBatchSizeBytes = minMessageSizeBytes * 10
+	minMessageSizeBytes   = 210
+	maxReadBatchSizeBytes = minMessageSizeBytes * 5
 )
 
 type CloudEventsBatchReader interface {
@@ -30,20 +30,33 @@ func NewKafkaCloudEventsBatchReader(conn kafkaReadBatchConn) KafkaCloudEventsBat
 }
 
 func (r KafkaCloudEventsBatchReader) ReadBatch(eventChan chan cloudevents.Event, errChan chan error) {
-	buf := make([]byte, minMessageSizeBytes)
 	batch := r.conn.ReadBatch(minMessageSizeBytes, maxReadBatchSizeBytes)
+	buf := make([]byte, minMessageSizeBytes)
 
 	for {
-		if n, err := batch.Read(buf); err != nil {
-			errChan <- err
-		} else {
-			var event cloudevents.Event
+		n, err := batch.Read(buf)
 
-			if err := format.JSON.Unmarshal(buf[:n], &event); err != nil {
-				errChan <- fmt.Errorf("unmarshal received cloudevent: %w", err)
-			} else {
-				eventChan <- event
-			}
+		if err != nil {
+			errChan <- fmt.Errorf("kafka batch read: %w", err)
+			break
+		}
+
+		var event cloudevents.Event
+
+		if err := format.JSON.Unmarshal(buf[:n], &event); err != nil {
+			errChan <- fmt.Errorf("unmarshal received cloudevent: %w", err)
+		} else {
+			eventChan <- event
 		}
 	}
+
+	if err := batch.Close(); err != nil {
+		errChan <- fmt.Errorf("kafka batch close: %w", err)
+	}
+
+	// TODO: should be really be recursing once the initial
+	// batch is empty? Might not matter when the consumer is
+	// invoked through Knative, but it'd be worth verifying best
+	// practices around batch sizes, keeping topics hydrated etc.
+	r.ReadBatch(eventChan, errChan)
 }
