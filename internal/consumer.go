@@ -2,32 +2,33 @@ package internal
 
 import (
 	"context"
-	"fmt"
 
-	v2 "github.com/cloudevents/sdk-go/v2"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
-type cloudEventReceiver interface {
-	StartReceiver(ctx context.Context, receiverFunc any) error
-}
-
 type Consumer struct {
-	receiver cloudEventReceiver
-	logger   stdLogger
+	eventReader CloudEventsBatchReader
+	logger      *Logger
 }
 
-func NewConsumer(receiver cloudEventReceiver, logger stdLogger) Consumer {
-	return Consumer{receiver, logger}
+func NewConsumer(eventReader CloudEventsBatchReader, logger *Logger) Consumer {
+	return Consumer{eventReader, logger}
 }
 
-func (p Consumer) Run(ctx context.Context) error {
+func (p Consumer) Run(ctx context.Context) {
+	events := make(chan cloudevents.Event)
+	errs := make(chan error)
+
+	p.eventReader.ReadBatch(events, errs)
+
 	// We're scaling consumers with Knative,
 	// so it's perfectly fine to block here
-	if err := p.receiver.StartReceiver(ctx, func(event v2.Event) {
-		p.logger.Info(event)
-	}); err != nil {
-		return fmt.Errorf("cloudevents receiver: %w", err)
+	for {
+		select {
+		case evt := <-events:
+			p.logger.Info(evt)
+		case err := <-errs:
+			p.logger.Error(err)
+		}
 	}
-
-	return nil
 }

@@ -6,25 +6,19 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/cloudevents/sdk-go/v2/event"
-	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
 const writeInterval = 1 * time.Second
 
-type cloudEventSender interface {
-	Send(context.Context, event.Event) protocol.Result
-}
-
 type Producer struct {
-	sender cloudEventSender
-	logger stdLogger
+	eventSender CloudEventsSender
+	logger      *Logger
 }
 
-func NewProducer(sender cloudEventSender, logger stdLogger) Producer {
-	return Producer{sender, logger}
+func NewProducer(eventSender CloudEventsSender, logger *Logger) Producer {
+	return Producer{eventSender, logger}
 }
 
 func (p Producer) Run(ctx context.Context) error {
@@ -67,7 +61,7 @@ func (p Producer) sendMessage(ctx context.Context) error {
 		return fmt.Errorf("cloudevent set data: %w", err)
 	}
 
-	if err := p.sender.Send(ctx, event); err != nil {
+	if err := p.eventSender.Send(event); err != nil {
 		return fmt.Errorf("cloudevent send: %w", err)
 	}
 

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/jamesseanwright/knative-kafka-cloudevents/internal"
 	"github.com/segmentio/kafka-go"
 )
@@ -17,14 +16,8 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	protocol := internal.NewKafkaCloudEventsProtocol(conn)
-	client, err := cloudevents.NewClient(protocol)
-
-	if err != nil {
-		logger.Fatal(client)
-	}
-
-	producer := internal.NewProducer(client, logger)
+	eventSender := internal.NewKafkaCloudEventsSender(conn)
+	producer := internal.NewProducer(eventSender, logger)
 
 	if err := producer.Run(ctx); err != nil {
 		logger.Fatal(err)
