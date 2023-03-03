@@ -9,10 +9,8 @@ import (
 )
 
 const (
-	kibibyte         = 1024
-	mebibyte         = 1024 * kibibyte
-	readMinBatchSize = 10 * kibibyte
-	readMaxBatchSize = 10 * mebibyte
+	minMessageSizeBytes   = 250
+	maxReadBatchSizeBytes = minMessageSizeBytes * 10
 )
 
 type CloudEventsBatchReader interface {
@@ -32,16 +30,16 @@ func NewKafkaCloudEventsBatchReader(conn kafkaReadBatchConn) KafkaCloudEventsBat
 }
 
 func (r KafkaCloudEventsBatchReader) ReadBatch(eventChan chan cloudevents.Event, errChan chan error) {
-	buf := make([]byte, readMinBatchSize)
-	batch := r.conn.ReadBatch(readMinBatchSize, readMaxBatchSize)
+	buf := make([]byte, minMessageSizeBytes)
+	batch := r.conn.ReadBatch(minMessageSizeBytes, maxReadBatchSizeBytes)
 
 	for {
-		if _, err := batch.Read(buf); err != nil {
+		if n, err := batch.Read(buf); err != nil {
 			errChan <- err
 		} else {
 			var event cloudevents.Event
 
-			if err := format.JSON.Unmarshal(buf, &event); err != nil {
+			if err := format.JSON.Unmarshal(buf[:n], &event); err != nil {
 				errChan <- fmt.Errorf("unmarshal received cloudevent: %w", err)
 			} else {
 				eventChan <- event
