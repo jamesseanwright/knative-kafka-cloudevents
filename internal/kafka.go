@@ -32,9 +32,9 @@ type message struct {
 }
 
 func newMessage(msg kafka.Message) *message {
-	var headers map[string]string
 	var contentType string
 	var version spec.Version
+	headers := map[string]string{}
 	spc := spec.WithPrefix(cloudEventPrefix)
 
 	for _, v := range msg.Headers {
@@ -87,6 +87,20 @@ func (m message) ReadBinary(ctx context.Context, writer binding.BinaryWriter) er
 	}
 
 	return nil
+}
+
+func (m message) GetAttribute(k spec.Kind) (spec.Attribute, interface{}) {
+	attr := m.version.AttributeFromKind(k)
+
+	if attr != nil {
+		return attr, string(m.headers[attr.PrefixedName()])
+	}
+
+	return nil, nil
+}
+
+func (m message) GetExtension(name string) interface{} {
+	return string(m.headers[cloudEventPrefix+name])
 }
 
 func (m message) Finish(error) error {
@@ -169,10 +183,20 @@ func (p KafkaCloudEventsProtocol) Receive(context.Context) (binding.Message, err
 }
 
 func (p KafkaCloudEventsProtocol) Send(ctx context.Context, message binding.Message, transformers ...binding.Transformer) error {
-	writer := &kafkaMessageWriter{}
+	kafkaMsg := kafka.Message{}
 
-	if _, err := binding.Write(ctx, message, nil, writer); err != nil {
-		return fmt.Errorf("send kafka cloudevent: %w", err)
+	enc, err := binding.Write(ctx, message, nil, (*kafkaMessageWriter)(&kafkaMsg))
+
+	if err != nil {
+		return fmt.Errorf("marshal cloudevent: %w", err)
+	}
+
+	if enc != binding.EncodingBinary {
+		return fmt.Errorf("unexpected cloudevent encoding (want binary, got %s)", enc.String())
+	}
+
+	if _, err := p.conn.WriteMessages(kafkaMsg); err != nil {
+		return fmt.Errorf("write kafka message: %w", err)
 	}
 
 	return nil
