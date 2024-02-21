@@ -7,11 +7,11 @@ import (
 )
 
 type Consumer struct {
-	eventReader CloudEventsBatchReader
+	eventReader CloudEventsReader
 	logger      *Logger
 }
 
-func NewConsumer(eventReader CloudEventsBatchReader, logger *Logger) Consumer {
+func NewConsumer(eventReader CloudEventsReader, logger *Logger) Consumer {
 	return Consumer{eventReader, logger}
 }
 
@@ -20,14 +20,12 @@ func (p Consumer) Run(ctx context.Context) {
 	// so it's perfectly fine to block here
 
 	for {
-		batch, err := p.eventReader.ReadBatch()
+		event, err := p.eventReader.Read(ctx)
 
 		if err != nil && !errors.Is(err, io.EOF) {
 			p.logger.Error("read batch: %w", err)
 		}
 
-		for _, v := range batch {
-			p.logger.Info(v)
-		}
+		p.logger.Info(event)
 	}
 }
