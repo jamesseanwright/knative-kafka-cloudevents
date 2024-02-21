@@ -40,3 +40,17 @@ services:
       timeout: 30s
       retries: 5
       start_period: 8s
+
+  akhq:
+    image: tchiotludo/akhq:dev
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "kafka:9092"
+    ports:
+      - 8080:8080
+    depends_on:
+      - kafka
