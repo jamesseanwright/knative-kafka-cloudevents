@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"errors"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding/format"
 	"github.com/segmentio/kafka-go"
@@ -27,26 +29,26 @@ func NewKafkaCloudEventsBatchReader(conn kafkaReadBatchConn) KafkaCloudEventsBat
 	return KafkaCloudEventsBatchReader{conn}
 }
 
-func (r KafkaCloudEventsBatchReader) ReadBatch() ([]cloudevents.Event, error) {
+func (r KafkaCloudEventsBatchReader) ReadBatch() (events []cloudevents.Event, err error) {
 	batch := r.conn.ReadBatch(minMessageSizeBytes, maxReadBatchSizeBytes)
 	buf := make([]byte, minMessageSizeBytes)
 
-	defer batch.Close()
-
-	var events []cloudevents.Event
+	defer func() {
+		err = errors.Join(err, batch.Close())
+	}()
 
 	for {
 		var event cloudevents.Event
+		var n int
 
-		n, err := batch.Read(buf)
+		n, err = batch.Read(buf)
 
 		if err != nil {
-			return events, err
+			return
 		}
 
-
-		if err := format.JSON.Unmarshal(buf[:n], &event); err != nil {
-			return events, err
+		if err = format.JSON.Unmarshal(buf[:n], &event); err != nil {
+			return
 		}
 
 		events = append(events, event)
