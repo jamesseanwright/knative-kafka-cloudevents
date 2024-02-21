@@ -8,7 +8,10 @@ import (
 )
 
 const (
-	maxReadBytes = 10e6 // 10 MB
+	maxReadBytes    = 10e6 // 10 MB
+	topic           = "test-events"
+	consumerGroupID = "go-cloudevents-consumer"
+	broker          = "kafka:9092"
 )
 
 func main() {
@@ -16,10 +19,10 @@ func main() {
 	logger := internal.NewLogger()
 
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{"kafka:9092"},
-		Topic:     "test-events",
+		Brokers:   []string{broker},
+		Topic:     topic,
 		Partition: 0,
-		GroupID:   "go-cloudevents-consumer",
+		GroupID:   consumerGroupID,
 		MaxBytes:  maxReadBytes,
 	})
 
