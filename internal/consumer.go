@@ -2,8 +2,8 @@ package internal
 
 import (
 	"context"
-
-	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"errors"
+	"io"
 )
 
 type Consumer struct {
@@ -16,20 +16,18 @@ func NewConsumer(eventReader CloudEventsBatchReader, logger *Logger) Consumer {
 }
 
 func (p Consumer) Run(ctx context.Context) {
-	events := make(chan cloudevents.Event)
-	errs := make(chan error)
-
-	go p.eventReader.ReadBatch(events, errs)
-
 	// We're scaling consumers with Knative,
 	// so it's perfectly fine to block here
+
 	for {
-		select {
-		case evt := <-events:
-			p.logger.Info(evt)
-		case err := <-errs:
-			// TODO: report io.EOF count and use to adjust batch size
-			p.logger.Error(err)
+		batch, err := p.eventReader.ReadBatch()
+
+		if err != nil && !errors.Is(err, io.EOF) {
+			p.logger.Error("read batch: %w", err)
+		}
+
+		for _, v := range batch {
+			p.logger.Info(v)
 		}
 	}
 }
