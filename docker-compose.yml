@@ -18,12 +18,12 @@ services:
         condition: service_healthy
 
   zookeeper:
-    image: bitnami/zookeeper:3.8.1
+    image: bitnami/zookeeper:3.8.3
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
 
   kafka:
-    image: bitnami/kafka:3.2.3
+    image: bitnami/kafka:3.6.1
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_LISTENERS=CLIENT://:9092
