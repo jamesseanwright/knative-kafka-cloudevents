@@ -26,6 +26,9 @@ func (p Producer) Run(ctx context.Context) error {
 	done := ctx.Done()
 	g, ctx := errgroup.WithContext(ctx)
 
+	// TODO: we shouldn't need to execute this 
+	// in a child goroutine; we should just
+	// be able to block the main goroutine!
 	g.Go(func() error {
 		for {
 			select {
