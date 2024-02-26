@@ -23,7 +23,7 @@ func (p Consumer) Run(ctx context.Context) {
 		event, err := p.eventReader.Read(ctx)
 
 		if err != nil && !errors.Is(err, io.EOF) {
-			p.logger.Error("read batch: %w", err)
+			p.logger.Error("read event: %w", err)
 		}
 
 		p.logger.Info(event)
