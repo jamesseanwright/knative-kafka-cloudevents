@@ -1,18 +1,24 @@
 services:
   producer:
+    image: knative-kafka-cloudevents-producer
     build:
       context: .
       args:
         - entrypoint=producer
+    environment:
+      - KAFKA_BROKER=kafka:9092
     depends_on:
       kafka:
         condition: service_healthy
 
   consumer:
+    image: knative-kafka-cloudevents-consumer
     build:
       context: .
       args:
         - entrypoint=consumer
+    environment:
+      - KAFKA_BROKER=kafka:9092
     depends_on:
       kafka:
         condition: service_healthy

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/jamesseanwright/knative-kafka-cloudevents/internal"
 	"github.com/segmentio/kafka-go"
@@ -11,12 +12,16 @@ const (
 	maxReadBytes    = 10e6 // 10 MB
 	topic           = "test-events"
 	consumerGroupID = "go-cloudevents-consumer"
-	broker          = "kafka:9092"
 )
 
 func main() {
 	ctx := context.Background() // TODO: context.WithCancel/SIGINT
 	logger := internal.NewLogger()
+	broker := os.Getenv("KAFKA_BROKER")
+
+	if broker == "" {
+		logger.Fatal("KAFKA_BROKER environment variable is missing")
+	}
 
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{broker},
