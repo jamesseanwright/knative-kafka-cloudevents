@@ -11,10 +11,6 @@ spec:
       protocol: TCP
       port: 9092
       targetPort: 9092
-    - name: nginx
-      protocol: TCP
-      port: 8080
-      targetPort: 8080
 
 ---
 apiVersion: apps/v1
