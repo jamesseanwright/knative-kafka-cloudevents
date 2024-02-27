@@ -1,35 +1,69 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-events
+spec:
+  type: ClusterIP
+  selector:
+    service: test-events
+  ports:
+    - name: kafka
+      protocol: TCP
+      port: 9092
+      targetPort: 9092
+    - name: nginx
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kafka-deployment
   labels:
-    service: kafka
+    component: kafka
 spec:
   replicas: 1 # TODO: shard by partitions
   selector:
     matchLabels:
-      service: kafka
+      component: kafka
   template:
     metadata:
       labels:
-        service: kafka
+        component: kafka
+        service: test-events
     spec:
+      hostAliases:
+        - ip: "127.0.0.1"
+          hostnames:
+            - localhost
+
+            # This second entry is required as the producer
+            # and consumer, which sit in their own pods,
+            # connect to Kafka via the DNS name computed by
+            # K8s, and Kafka itself uses the java.net package
+            # to resolve its own IP (127.0.0.1 in this case)
+            # for the requested hostname
+            - test-events
       containers:
         - name: kafka
           image: bitnami/kafka:3.6.1
+          ports:
+            - containerPort: 9092
           env:
             - name: KAFKA_BROKER_ID
-              value: 1
+              value: "1"
             - name: KAFKA_CFG_LISTENERS
               value: CLIENT://:9092
             - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
               value: CLIENT:PLAINTEXT
             - name: KAFKA_CFG_ADVERTISED_LISTENERS
-              value: CLIENT://kafka.default.svc.cluster.local:9092
+              value: CLIENT://test-events:9092
             - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
               value: CLIENT
             - name: KAFKA_CFG_ZOOKEEPER_CONNECT
-              value: zookeeper.default.svc.cluster.local:2181
+              value: localhost:2181
             - name: ALLOW_PLAINTEXT_LISTENER
               value: "yes"
           readinessProbe:
@@ -54,23 +88,26 @@ kind: Deployment
 metadata:
   name: producer-deployment
   labels:
-    service: producer
+    component: producer
+    service: test-events
 spec:
-  replicas: 1 # TODO: shard by partitions
+  replicas: 1
   selector:
     matchLabels:
-      service: producer
+      component: producer
   template:
     metadata:
       labels:
-        service: producer
+        component: producer
+        service: test-events
     spec:
       containers:
         - name: producer
           image: knative-kafka-cloudevents-producer:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: KAFKA_BROKER
-              value: kafka.default.svc.cluster.local:9092
+              value: test-events:9092
 
 ---
 apiVersion: apps/v1
@@ -78,20 +115,48 @@ kind: Deployment
 metadata:
   name: consumer-deployment
   labels:
-    service: consumer
+    component: consumer
 spec:
-  replicas: 1 # TODO: shard by partitions
+  replicas: 1
   selector:
     matchLabels:
-      service: consumer
+      component: consumer
   template:
     metadata:
       labels:
-        service: consumer
+        component: consumer
+        service: test-events
     spec:
       containers:
         - name: consumer
-          image: knative-kafka-cloudevents-consumer:latest
+          image: knative-kafka-cloudevents-producer:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: KAFKA_BROKER
-              value: kafka.default.svc.cluster.local:9092
+              value: test-events:9092
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debug
+  labels:
+    component: debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: debug
+  template:
+    metadata:
+      labels:
+        component: debug
+        service: test-events
+    spec:
+      containers:
+        - name: debug
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command:
+            - sleep
+            - "3600"
