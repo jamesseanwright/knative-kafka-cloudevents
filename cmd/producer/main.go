@@ -19,7 +19,5 @@ func main() {
 	eventSender := internal.NewKafkaCloudEventsSender(conn)
 	producer := internal.NewProducer(eventSender, logger)
 
-	if err := producer.Run(ctx); err != nil {
-		logger.Fatal(err)
-	}
+	producer.Run(ctx)
 }

@@ -7,7 +7,6 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
-	"golang.org/x/sync/errgroup"
 )
 
 const writeInterval = 100 * time.Millisecond
@@ -21,29 +20,21 @@ func NewProducer(eventSender CloudEventsSender, logger *Logger) Producer {
 	return Producer{eventSender, logger}
 }
 
-func (p Producer) Run(ctx context.Context) error {
+func (p Producer) Run(ctx context.Context) {
 	ticker := time.NewTicker(writeInterval)
 	done := ctx.Done()
-	g, ctx := errgroup.WithContext(ctx)
 
-	// TODO: we shouldn't need to execute this 
-	// in a child goroutine; we should just
-	// be able to block the main goroutine!
-	g.Go(func() error {
-		for {
-			select {
-			case <-done:
-				return nil
+	for {
+		select {
+		case <-done:
+			return
 
-			case <-ticker.C:
-				if err := p.sendMessage(ctx); err != nil {
-					return err
-				}
+		case <-ticker.C:
+			if err := p.sendMessage(ctx); err != nil {
+				p.logger.Error(err)
 			}
 		}
-	})
-
-	return g.Wait()
+	}
 }
 
 func (p Producer) sendMessage(ctx context.Context) error {
