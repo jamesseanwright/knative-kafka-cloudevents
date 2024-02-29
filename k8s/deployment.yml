@@ -69,8 +69,9 @@ spec:
                 - --list
                 - --bootstrap-server
                 - localhost:9092
-            initialDelaySeconds: 8
-            periodSeconds: 30
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
 
         - name: zookeeper
           image: bitnami/zookeeper:3.8.3
@@ -85,7 +86,6 @@ metadata:
   name: producer-deployment
   labels:
     component: producer
-    service: test-events
 spec:
   replicas: 1
   selector:
