@@ -114,7 +114,7 @@ metadata:
   labels:
     component: consumer
 spec:
-  replicas: 1
+  replicas: 3 # TODO: HPA/scale to zero with Knative or an existing Kafka operator
   selector:
     matchLabels:
       component: consumer
