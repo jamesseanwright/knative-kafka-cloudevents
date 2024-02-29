@@ -131,29 +131,3 @@ spec:
           env:
             - name: KAFKA_BROKER
               value: test-events:9092
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: debug
-  labels:
-    component: debug
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      component: debug
-  template:
-    metadata:
-      labels:
-        component: debug
-        service: test-events
-    spec:
-      containers:
-        - name: debug
-          image: busybox
-          imagePullPolicy: IfNotPresent
-          command:
-            - sleep
-            - "3600"
